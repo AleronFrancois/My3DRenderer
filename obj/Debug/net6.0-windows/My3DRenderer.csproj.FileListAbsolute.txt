@@ -1,0 +1,5 @@
+C:\Users\Aleron\Documents\My3DRenderer\obj\Debug\net6.0-windows\My3DRenderer.csproj.AssemblyReference.cache
+C:\Users\Aleron\Documents\My3DRenderer\obj\Debug\net6.0-windows\My3DRenderer.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Aleron\Documents\My3DRenderer\obj\Debug\net6.0-windows\My3DRenderer.csproj.CoreCompileInputs.cache
+C:\Users\Aleron\Documents\My3DRenderer\obj\Debug\net6.0-windows\My3DRenderer.AssemblyInfoInputs.cache
+C:\Users\Aleron\Documents\My3DRenderer\obj\Debug\net6.0-windows\My3DRenderer.AssemblyInfo.cs

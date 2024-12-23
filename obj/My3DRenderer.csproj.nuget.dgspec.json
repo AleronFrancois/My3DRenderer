@@ -50,19 +50,19 @@
             },
             "OpenTK": {
               "target": "Package",
-              "version": "[4.5.0, )"
+              "version": "[4.7.3, )"
             },
             "OpenTK.Core": {
               "target": "Package",
-              "version": "[4.5.0, )"
+              "version": "[4.7.3, )"
             },
             "OpenTK.Mathematics": {
               "target": "Package",
-              "version": "[4.5.0, )"
+              "version": "[4.7.3, )"
             },
             "OpenTK.OpenAL": {
               "target": "Package",
-              "version": "[4.5.0, )"
+              "version": "[4.7.3, )"
             }
           },
           "imports": [

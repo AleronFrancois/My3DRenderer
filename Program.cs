@@ -62,16 +62,17 @@ public class Renderer : GameWindow
         // Set the initial view matrix for the camera
         view = Matrix4.LookAt(cameraPosition, cameraPosition + cameraFront, cameraUp);
 
-        // Create cube geometry using Geometry.cs
+        // Load cube geometry using Geometry.cs
         var cube = Geometry.CreateCube();
         vao = cube.vao; // Initialize the cube geometry
 
-        // Create ground geometry using Geometry.cs
+        // Load ground geometry using Geometry.cs
         var ground = Geometry.CreateGround();
         groundVao = ground.vao; // Initialize the ground geometry
 
         // Create shader program
-        shaderProgram = CreateShaderProgram();
+        Shader shader = new Shader();
+        shaderProgram = shader.CreateShaderProgram();
         GL.UseProgram(shaderProgram);
 
         // Set window to grab mouse cursor
@@ -225,71 +226,6 @@ public class Renderer : GameWindow
 
 
 
-    /// <CreateShaderProgram>
-    /// Creates and links the shader program using vertex and fragment shaders
-    /// Returns the shader program after successful compilation and linking
-    /// </CreateShaderProgram>
-    private int CreateShaderProgram() { 
-
-        string vertexShaderSource = @"
-            #version 330 core
-            layout(location = 0) in vec3 aPos;
-
-            uniform mat4 projection;
-            uniform mat4 view;
-
-            void main() {
-                gl_Position = projection * view * vec4(aPos, 1.0);
-            }";
-
-        string fragmentShaderSource = @"
-            #version 330 core
-            out vec4 FragColor;
-
-            uniform vec3 objectColor; // Set a unique color for each object
-
-            void main() {
-                FragColor = vec4(objectColor, 1.0);
-            }";
-
-        int vertexShader = CompileShader(ShaderType.VertexShader, vertexShaderSource);
-        int fragmentShader = CompileShader(ShaderType.FragmentShader, fragmentShaderSource);
-
-        int shaderProgram = GL.CreateProgram();
-        GL.AttachShader(shaderProgram, vertexShader);
-        GL.AttachShader(shaderProgram, fragmentShader);
-        GL.LinkProgram(shaderProgram);
-
-        return shaderProgram;
-    }
-
-
-
-
-
-
-    /// <CompileShader>
-    /// Compiles a shader of a specified type from the source code
-    /// Logs any compilation errorss and returns the compiled shader program
-    /// </CompileShader>
-    private int CompileShader(ShaderType type, string source) {
-
-        int shader = GL.CreateShader(type);
-        GL.ShaderSource(shader, source);
-        GL.CompileShader(shader);
-
-        string infoLog = GL.GetShaderInfoLog(shader);
-        if (!string.IsNullOrEmpty(infoLog)) {
-            Console.WriteLine($"Error, compiling shader: {infoLog}");
-        }
-
-        return shader;
-    }
-
-
-
-
-
     /// <Main>
     /// Entry point for the application that initialises and runs the renderer
     /// Configures window settings and starts the main loop
@@ -298,7 +234,7 @@ public class Renderer : GameWindow
 
         var windowSettings = new GameWindowSettings();
         var nativeWindowSettings = new NativeWindowSettings { 
-            Size = new Vector2i(800, 560),
+            Size = new Vector2i(1280, 720),
             Title = "OpenTK Renderer"
         };
 

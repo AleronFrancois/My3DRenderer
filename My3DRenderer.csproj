@@ -7,10 +7,10 @@
 
   <ItemGroup>
     <PackageReference Include="ImGui.NET" Version="1.88.0" />
-    <PackageReference Include="OpenTK" Version="4.5.0" />
-    <PackageReference Include="OpenTK.Core" Version="4.5.0" />
-    <PackageReference Include="OpenTK.Mathematics" Version="4.5.0" />
-    <PackageReference Include="OpenTK.OpenAL" Version="4.5.0" />
+    <PackageReference Include="OpenTK" Version="4.7.3" />
+    <PackageReference Include="OpenTK.Core" Version="4.7.3" />
+    <PackageReference Include="OpenTK.Mathematics" Version="4.7.3" />
+    <PackageReference Include="OpenTK.OpenAL" Version="4.7.3" />
   </ItemGroup>
 
 </Project>

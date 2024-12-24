@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("My3DRenderer")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+377fa1d31536606f7f7d797750013b73ae6a32be")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+174b40e97129fdc3e01116741e2c193b9822ba46")]
 [assembly: System.Reflection.AssemblyProductAttribute("My3DRenderer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("My3DRenderer")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

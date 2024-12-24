@@ -76,8 +76,8 @@ public class Renderer : GameWindow
         GL.UseProgram(shaderProgram);
 
         // Set window to grab mouse cursor
-        this.CursorVisible = false; // Hides the cursor
-        this.CursorGrabbed = true; // Grabs the cursor
+        this.CursorState = CursorState.Hidden;  // Hides the cursor
+        this.CursorState = CursorState.Grabbed; // Grabs the cursor
 
         // Finds the center of the screen relative to the resolution
         lastX = ClientSize.X / 2;
@@ -122,14 +122,13 @@ public class Renderer : GameWindow
 
         // Toggle cursor visibility and grabbing on 'R' key press
         if (keyboard.IsKeyDown(Keys.D1)) {
-            if (this.CursorGrabbed) {
+            if (this.CursorState == CursorState.Grabbed) {
                 // If cursor is currently grabbed, ungrab and unhide it
-                this.CursorVisible = true;  // Unhide the cursor
-                this.CursorGrabbed = false; // Ungrab the cursor
+                this.CursorState = CursorState.Normal;  // Unhides and ungrabs the cursor
             } else {
                 // If cursor is currently not grabbed, grab it and hide it
-                this.CursorVisible = false; // Hide the cursor
-                this.CursorGrabbed = true;  // Grab the cursor
+                this.CursorState = CursorState.Hidden;  // Hides the cursor
+                this.CursorState = CursorState.Grabbed; // Grabs the cursor
             }
         }
 

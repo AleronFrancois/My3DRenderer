@@ -1,126 +1,157 @@
-﻿using OpenTK; // Drives the program
-using OpenTK.Graphics; // Handles graphics
-using OpenTK.Windowing.Common;  // Handles window and input
-using OpenTK.Windowing.Desktop; // Handles desktop windowing
-using OpenTK.Graphics.OpenGL4;  // Handles OpenGL functions
-using OpenTK.Mathematics;       // Handles vectors and matrices mathematics
-using OpenTK.Windowing.GraphicsLibraryFramework; // Handles GLFW windowing and input handling
-using System; // For console logs
-using ImGuiNET; // For GUI
+﻿using OpenTK;
+using OpenTK.Graphics;
+using OpenTK.Windowing.Common;
+using OpenTK.Windowing.Desktop;
+using OpenTK.Graphics.OpenGL4;
+using OpenTK.Mathematics;
+using System.Collections.Generic;
+using OpenTK.Windowing.GraphicsLibraryFramework;
+using System;
 
 public class Renderer : GameWindow
 {
-    // Handles position and movement of the camera
-    private Vector3 cameraPosition = new Vector3(0, 0, 5); // Camera position in 3D space
-    private Vector3 cameraFront = new Vector3(0, 0, -1); // Direction the camera is facing
-    private Vector3 cameraUp = new Vector3(0, 1, 0); // Y-axis of camera direction 
-    private float cameraSpeed = 0.001f; // Camera speed value
+    private struct CubeInstance
+    {
+        public Matrix4 ModelMatrix;
+        public Vector3 Color;
+        public int Vao;
+    }
 
-    // Handles mouse movement 
-    private float yaw = -90.0f;
-    private float pitch = 0.0f;
-
-    float sensitivity = 0.05f; // Mouse sensitivity
-
-    // Center point of mouse relative to window size
-    private float lastX;
-    private float lastY;
-    
-    private bool firstMouse = true; // Checks for the first mouse movement
-
-    // Projection and view matrices for camera transformations
-    private Matrix4 projection;
-    private Matrix4 view;
-
-    // OpenGL objects for shader program and vertex array object (VAO)
+    private List<CubeInstance> cubes;
     private int shaderProgram;
     private int vao;
-    private int groundVao;
 
-    // Constructor to initialise the window
-    public Renderer(GameWindowSettings windowSettings, NativeWindowSettings nativeWindowSettings) : base(windowSettings, nativeWindowSettings) { }
+    private Matrix4 projection, view;
 
-    
+    private struct Camera
+    {
+        public Vector3 Position;
+        public Vector3 Front;
+        public Vector3 Up;
+        public float Speed;
+        public float Yaw;
+        public float Pitch;
+        public float Sensitivity;
+    }
 
+    private Camera camera;
+    private float lastX, lastY;
+    private bool firstMouse = true;
 
+    public Renderer(GameWindowSettings windowSettings, NativeWindowSettings nativeWindowSettings) : base(windowSettings, nativeWindowSettings)
+    {
+        camera = new Camera
+        {
+            Position = new Vector3(0, 0, 5),
+            Front = new Vector3(0, 0, -1),
+            Up = new Vector3(0, 1, 0),
+            Speed = 0.001f,
+            Yaw = -90.0f,
+            Pitch = 0.0f,
+            Sensitivity = 0.05f
+        };
 
+        cubes = new List<CubeInstance>();
+    }
 
-    /// <OnLoad>
-    /// Handles OpenGL projection matrices and geometry
-    /// Prepares the shader program and enables mouse capture
-    /// </OnLoad>
-    protected override void OnLoad() {
-        
+    protected override void OnLoad()
+    {
         base.OnLoad();
 
-        GL.ClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Background color
-        GL.Enable(EnableCap.DepthTest); // Enables depth testing to correctly render 3D objects
+        GL.ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        GL.Enable(EnableCap.DepthTest);
 
-        // Set up projection matrix for a perspective view
         projection = Matrix4.CreatePerspectiveFieldOfView(MathHelper.DegreesToRadians(45.0f), ClientSize.X / (float)ClientSize.Y, 0.1f, 100.0f);
+        view = Matrix4.LookAt(camera.Position, camera.Position + camera.Front, camera.Up);
 
-        // Set the initial view matrix for the camera
-        view = Matrix4.LookAt(cameraPosition, cameraPosition + cameraFront, cameraUp);
+        InitializeShaders();
 
-        // Load cube geometry using Geometry.cs
-        var cube = Geometry.CreateCube();
-        vao = cube.vao; // Initialize the cube geometry
-
-        // Load ground geometry using Geometry.cs
-        var ground = Geometry.CreateGround();
-        groundVao = ground.vao; // Initialize the ground geometry
-
-        // Create shader program
-        Shader shader = new Shader();
-        shaderProgram = shader.CreateShaderProgram();
-        GL.UseProgram(shaderProgram);
+        AddCube(new Vector3(1, 0, -5), new Vector3(1, 1, 1), new Vector3(0, 1, 0));
+        AddCube(new Vector3(0, 0, -5), new Vector3(1, 1, 1), new Vector3(1, 0, 0));
 
         // Set window to grab mouse cursor
         this.CursorState = CursorState.Hidden;  // Hides the cursor
         this.CursorState = CursorState.Grabbed; // Grabs the cursor
-
-        // Finds the center of the screen relative to the resolution
-        lastX = ClientSize.X / 2;
-        lastY = ClientSize.Y / 2;
     }
 
+    private void InitializeGeometry()
+    {
+        var cube = Geometry.CreateCube();
+        vao = cube.vao;
+    }
 
+    private void InitializeShaders()
+    {
+        Shader shader = new Shader();
+        shaderProgram = shader.CreateShaderProgram();
+        GL.UseProgram(shaderProgram);
+    }
 
+    private void AddCube(Vector3 position, Vector3 scale, Vector3 color)
+    {
+        var (vao, vbo, ebo) = Geometry.CreateCube(); // Create a new VAO for each cube
+        Matrix4 model = Matrix4.CreateScale(scale) * Matrix4.CreateTranslation(position);
+        cubes.Add(new CubeInstance { ModelMatrix = model, Color = color, Vao = vao });
+    }
 
-
-
-    /// <OnUpdateFrame>
-    /// Handles input updates for WASD movement
-    /// Updates the view matrix based on the current camera position
-    /// </OnUpdateFrame>
-    protected override void OnUpdateFrame(FrameEventArgs e) {
-
+    protected override void OnUpdateFrame(FrameEventArgs e)
+    {
         base.OnUpdateFrame(e);
 
         if (!IsFocused) return;
 
+        HandleKeyboardInput();
+        HandleMouseInput();
+        view = Matrix4.LookAt(camera.Position, camera.Position + camera.Front, camera.Up);
+    }
+
+    private void HandleMouseInput()
+{
+    var mouse = MouseState;
+    if (firstMouse)
+    {
+        lastX = mouse.X;
+        lastY = mouse.Y;
+        firstMouse = false;
+    }
+
+    float offsetX = mouse.X - lastX;
+    float offsetY = lastY - mouse.Y; // Reversed because y-coordinates go from bottom to top
+    lastX = mouse.X;
+    lastY = mouse.Y;
+
+    offsetX *= camera.Sensitivity;
+    offsetY *= camera.Sensitivity;
+
+    camera.Yaw += offsetX;
+    camera.Pitch += offsetY;
+
+    // Clamping the pitch to prevent flipping
+    if (camera.Pitch > 89.0f) camera.Pitch = 89.0f;
+    if (camera.Pitch < -89.0f) camera.Pitch = -89.0f;
+
+    // Updating the camera's front vector
+    Vector3 front;
+    front.X = (float)(Math.Cos(MathHelper.DegreesToRadians(camera.Yaw)) * Math.Cos(MathHelper.DegreesToRadians(camera.Pitch)));
+    front.Y = (float)Math.Sin(MathHelper.DegreesToRadians(camera.Pitch));
+    front.Z = (float)(Math.Sin(MathHelper.DegreesToRadians(camera.Yaw)) * Math.Cos(MathHelper.DegreesToRadians(camera.Pitch)));
+    camera.Front = Vector3.Normalize(front);
+    }
+
+    private void HandleKeyboardInput()
+    {
         var keyboard = KeyboardState;
 
-        // Control camera using WASD keys
-        if (keyboard.IsKeyDown(Keys.W)) 
-            cameraPosition += cameraSpeed * cameraFront; // Move forward
-        if (keyboard.IsKeyDown(Keys.S)) 
-            cameraPosition -= cameraSpeed * cameraFront; // Move backward
-        if (keyboard.IsKeyDown(Keys.A)) 
-            cameraPosition -= Vector3.Normalize(Vector3.Cross(cameraFront, cameraUp)) * cameraSpeed; // Move left
-        if (keyboard.IsKeyDown(Keys.D)) 
-            cameraPosition += Vector3.Normalize(Vector3.Cross(cameraFront, cameraUp)) * cameraSpeed; // Move right
-        if (keyboard.IsKeyDown(Keys.Q)) 
-            cameraPosition += cameraSpeed * cameraUp; // Move up
-        if (keyboard.IsKeyDown(Keys.E))
-            cameraPosition -= cameraSpeed * cameraUp; // Move down
+        if (keyboard.IsKeyDown(Keys.W)) camera.Position += camera.Speed * camera.Front;
+        if (keyboard.IsKeyDown(Keys.S)) camera.Position -= camera.Speed * camera.Front;
+        if (keyboard.IsKeyDown(Keys.A)) camera.Position -= Vector3.Normalize(Vector3.Cross(camera.Front, camera.Up)) * camera.Speed;
+        if (keyboard.IsKeyDown(Keys.D)) camera.Position += Vector3.Normalize(Vector3.Cross(camera.Front, camera.Up)) * camera.Speed;
+        if (keyboard.IsKeyDown(Keys.Q)) camera.Position += camera.Speed * camera.Up;
+        if (keyboard.IsKeyDown(Keys.E)) camera.Position -= camera.Speed * camera.Up;
 
-        // Close window on hotkey
-        if (keyboard.IsKeyDown(Keys.Escape)) {
-            Close();
-        }
+        if (keyboard.IsKeyDown(Keys.Escape)) Close();
 
-        // Toggle cursor visibility and grabbing on 'R' key press
+        // Toggle cursor visibility 
         if (keyboard.IsKeyDown(Keys.D1)) {
             if (this.CursorState == CursorState.Grabbed) {
                 // If cursor is currently grabbed, ungrab and unhide it
@@ -131,113 +162,41 @@ public class Renderer : GameWindow
                 this.CursorState = CursorState.Grabbed; // Grabs the cursor
             }
         }
-
-        // Update the view matrix relative to camera position and direction
-        view = Matrix4.LookAt(cameraPosition, cameraPosition + cameraFront, cameraUp);
     }
 
-
-
-
-
-
-    /// <OnMouseMove>
-    /// Process mouse movement to update the cameras yaw and pitch
-    /// Prevents the camera from flipping with clamped pitch values
-    /// </OnMouseMove>
-    protected override void OnMouseMove(MouseMoveEventArgs e) {
-
-        base.OnMouseMove(e);
-
-        if (!IsFocused) return;
-
-        if (firstMouse) {
-            lastX = e.Position.X;
-            lastY = e.Position.Y;
-            firstMouse = false;
-        }
-
-        // Calculate mouse movement offsets
-        float xOffset = e.Position.X - lastX;
-        float yOffset = lastY - e.Position.Y; 
-        lastX = e.Position.X;
-        lastY = e.Position.Y;
-
-        // Handles mouse sensitivity
-        xOffset *= sensitivity;
-        yOffset *= sensitivity;
-
-        // Update yaw and pitch to avoid camera flipping
-        pitch += yOffset;
-        yaw += xOffset;
-        pitch = Math.Clamp(pitch, -89.0f, 89.0f);
-
-        // Calculate the new camera front vector based on yaw and pitch
-        Vector3 front;
-        front.X = (float)Math.Cos(MathHelper.DegreesToRadians(yaw)) * (float)Math.Cos(MathHelper.DegreesToRadians(pitch));
-        front.Y = (float)Math.Sin(MathHelper.DegreesToRadians(pitch));
-        front.Z = (float)Math.Sin(MathHelper.DegreesToRadians(yaw)) * (float)Math.Cos(MathHelper.DegreesToRadians(pitch));
-
-        // Normalise the front vector
-        cameraFront = Vector3.Normalize(front);
-    }
-
-
-
-
-
-
-    /// <OnRenderFrame>
-    /// Renders the scene by clearing buffers and drawing objects
-    /// Updates the shader program with the latest projection and view matrices
-    /// </OnRenderFrame>
-    protected override void OnRenderFrame(FrameEventArgs e) { 
-
+    protected override void OnRenderFrame(FrameEventArgs e)
+    {
         base.OnRenderFrame(e);
 
-        // Clear the color and depth buffer
         GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-        int colorLocation = GL.GetUniformLocation(shaderProgram, "objectColor");
-
-        GL.UseProgram(shaderProgram);
-
-        // Pass the projection and view matrices to the shader program
-        GL.UniformMatrix4(GL.GetUniformLocation(shaderProgram, "projection"), false, ref projection);
-        GL.UniformMatrix4(GL.GetUniformLocation(shaderProgram, "view"), false, ref view);
-
-        // Draw the cube
-        GL.Uniform3(colorLocation, 0.0f, 0.0f, 1.0f); // Red color
-        GL.BindVertexArray(vao);
-        GL.DrawElements(PrimitiveType.Triangles, 36, DrawElementsType.UnsignedShort, 0);
-
-        // Draw the ground
-        GL.Uniform3(colorLocation, 0.0f, 1.0f, 0.0f); // Green color
-        GL.BindVertexArray(groundVao);
-        GL.DrawElements(PrimitiveType.Triangles, 36, DrawElementsType.UnsignedShort, 0);
-
-        // Swap buffers to display the frame
+        RenderScene();
         SwapBuffers();
     }
 
+    private void RenderScene()
+    {
+        GL.UseProgram(shaderProgram);
+        GL.UniformMatrix4(GL.GetUniformLocation(shaderProgram, "projection"), false, ref projection);
+        GL.UniformMatrix4(GL.GetUniformLocation(shaderProgram, "view"), false, ref view);
 
+        for (int i = 0; i < cubes.Count; i++)
+        {
+            var cube = cubes[i];  // Access the cube by reference
+            GL.UniformMatrix4(GL.GetUniformLocation(shaderProgram, "model"), false, ref cube.ModelMatrix);
+            GL.Uniform3(GL.GetUniformLocation(shaderProgram, "objectColor"), cube.Color);
+            GL.BindVertexArray(cube.Vao);
+            GL.DrawElements(PrimitiveType.Triangles, 36, DrawElementsType.UnsignedShort, 0);
+        }
+    }
 
-
-
-
-    /// <Main>
-    /// Entry point for the application that initialises and runs the renderer
-    /// Configures window settings and starts the main loop
-    /// </Main>
-    public static void Main() {
-
+    public static void Main()
+    {
         var windowSettings = new GameWindowSettings();
-        var nativeWindowSettings = new NativeWindowSettings { 
-            Size = new Vector2i(1280, 720),
-            Title = "OpenTK Renderer"
-        };
+        var nativeWindowSettings = new NativeWindowSettings { Size = new Vector2i(1000, 600), Title = "OpenTK Renderer" };
 
-        using (var renderer = new Renderer(windowSettings, nativeWindowSettings)) {
+        using (var renderer = new Renderer(windowSettings, nativeWindowSettings))
+        {
             renderer.Run();
         }
     }
